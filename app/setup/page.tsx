@@ -2,10 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Settings, Save, CheckCircle, Clock, Building2, Mail, Phone, Home, ShieldAlert } from 'lucide-react'
-
 const HOTEL_KEY = 'guestara_hotel_config'
 const ROOMS_KEY = 'guestara_rooms_config'
-
 interface HotelConfig {
   nombre: string
   direccion: string
@@ -15,34 +13,31 @@ interface HotelConfig {
   checkOut: string
   totalRooms: number
 }
-
 const defaults: HotelConfig = {
   nombre: '', direccion: '', telefono: '', email: '',
   checkIn: '14:00', checkOut: '12:00', totalRooms: 10,
 }
-
 export default function SetupPage() {
   const router = useRouter()
   const [config, setConfig] = useState<HotelConfig>(defaults)
   const [saved, setSaved] = useState(false)
   const [role, setRole] = useState<string>('')
   const [activeRooms, setActiveRooms] = useState<number[]>([])
-
   useEffect(() => {
     const stored = localStorage.getItem(HOTEL_KEY)
     if (stored) setConfig(JSON.parse(stored))
     const storedRooms = localStorage.getItem(ROOMS_KEY)
     if (storedRooms) setActiveRooms(JSON.parse(storedRooms))
+    // FIX #1: Leer cookie g_auth (igual que el middleware)
     try {
-      const cookie = document.cookie.split(';').find(c => c.trim().startsWith('session='))
+      const cookie = document.cookie.split(';').find(c => c.trim().startsWith('g_auth='))
       if (cookie) {
-        const val = JSON.parse(atob(decodeURIComponent(cookie.split('=')[1])))
+        const val = JSON.parse(atob(decodeURIComponent(cookie.split('=').slice(1).join('='))))
         setRole(val.role)
         if (val.role !== 'admin') router.push('/')
       } else { router.push('/') }
     } catch { router.push('/') }
   }, [])
-
   useEffect(() => {
     const count = config.totalRooms
     setActiveRooms(prev => {
@@ -50,27 +45,21 @@ export default function SetupPage() {
       return next.map(n => prev.includes(n) ? n : n)
     })
   }, [config.totalRooms])
-
   const toggleRoom = (n: number) => {
     setActiveRooms(prev =>
       prev.includes(n) ? prev.filter(r => r !== n) : [...prev, n].sort((a,b) => a-b)
     )
   }
-
   const set = (k: keyof HotelConfig, v: string | number) =>
     setConfig(prev => ({ ...prev, [k]: v }))
-
   const handleSave = () => {
     localStorage.setItem(HOTEL_KEY, JSON.stringify(config))
     localStorage.setItem(ROOMS_KEY, JSON.stringify(activeRooms))
     setSaved(true)
     setTimeout(() => { setSaved(false); router.push('/configuracion') }, 2000)
   }
-
   if (role !== 'admin') return null
-
   const allRooms = Array.from({length: config.totalRooms}, (_, i) => i + 1)
-
   return (
     <div className="p-5 max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
@@ -85,7 +74,6 @@ export default function SetupPage() {
           <ShieldAlert className="w-3 h-3" /> Admin
         </div>
       </div>
-
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Building2 className="w-4 h-4 text-violet-400" />
@@ -110,7 +98,6 @@ export default function SetupPage() {
           </div>
         </div>
       </div>
-
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-violet-400" />
@@ -127,7 +114,6 @@ export default function SetupPage() {
           </div>
         </div>
       </div>
-
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Home className="w-4 h-4 text-violet-400" />
@@ -149,7 +135,6 @@ export default function SetupPage() {
           <p className="text-xs text-gray-500 mt-2">{activeRooms.length} de {config.totalRooms} cabanas activas</p>
         </div>
       </div>
-
       <div className="flex items-center gap-3">
         <button onClick={handleSave} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold">
           {saved ? <><CheckCircle className="w-4 h-4" /> Guardado!</> : <><Save className="w-4 h-4" /> Guardar configuracion</>}
