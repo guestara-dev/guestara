@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, UserCheck, Users, Clock, X, ArrowRight } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { Reservation } from '@/lib/data'
+
 function parseCheckOut(co: string): Date | null {
   try {
     const [datePart, timePart] = co.split(' ')
@@ -14,7 +15,8 @@ function parseCheckOut(co: string): Date | null {
     return d
   } catch { return null }
 }
-// FIX #3: ProximasModal items are clickable to open the guest modal
+
+// FIX #3: ProximasModal items are clickable to open the guest modal and select the room
 function ProximasModal({ items, onClose, onSelectGuest }: {
   items: Reservation[]
   onClose: () => void
@@ -39,7 +41,6 @@ function ProximasModal({ items, onClose, onSelectGuest }: {
             const diffH = co ? Math.round((co.getTime() - now.getTime()) / 3600000) : null
             const urgent = diffH !== null && diffH <= 2
             return (
-              // FIX #3: click on row opens GuestModal for this reservation
               <button
                 key={r.id}
                 onClick={() => { onSelectGuest(r); onClose() }}
@@ -68,11 +69,13 @@ function ProximasModal({ items, onClose, onSelectGuest }: {
     </div>
   )
 }
+
 export default function StatsGrid() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const [showProximas, setShowProximas] = useState(false)
-  const { reservations, extras, setSelectedGuest } = useStore()
+  const { reservations, extras, setSelectedGuest, setSelectedRoomNumber } = useStore()
+
   if (!mounted) {
     return (
       <div className="grid grid-cols-4 gap-4">
@@ -91,32 +94,36 @@ export default function StatsGrid() {
       </div>
     )
   }
+
   const active = reservations.filter(r => !['cancelled','completed'].includes(r.status))
   const checkedIn = reservations.filter(r => r.status === 'checked-in')
   const pending = active.filter(r => r.status === 'pending')
   const resRevenue = active.reduce((s,r) => s + r.amount, 0)
   const extRevenue = (extras ?? []).reduce((s,e) => s + e.total, 0)
   const revenue = resRevenue + extRevenue
+
   const now = new Date()
   const next24h = new Date(now.getTime() + 24 * 3600000)
   const proximas = checkedIn.filter(r => {
     const co = parseCheckOut(r.checkOut)
     return !co || co <= next24h
   })
+
   const urgent = proximas.filter(r => {
     const co = parseCheckOut(r.checkOut)
     return co ? (co.getTime() - now.getTime()) / 3600000 <= 2 : false
   })
+
   const clr: Record<string,string> = {
     amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     violet: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
     rose: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
   }
+
   return (
     <>
       <div className="grid grid-cols-4 gap-4">
-        {/* CARD 1: Próximas a vencer */}
         <div onClick={() => setShowProximas(true)}
           className={`bg-gray-900 border rounded-xl p-4 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg ${
             urgent.length > 0 ? 'border-red-600/50 hover:border-red-500/70 hover:shadow-red-900/30' : 'border-gray-800 hover:border-amber-600/40'
@@ -133,14 +140,9 @@ export default function StatsGrid() {
               <Clock className="w-4 h-4"/>
             </div>
           </div>
-          {urgent.length > 0 && (
-            <p className="text-[10px] text-red-400 mt-2 font-medium">⚠ {urgent.length} en ≤2h · click para ver</p>
-          )}
-          {urgent.length === 0 && (
-            <p className="text-xs text-gray-500 mt-2">click para ver detalle</p>
-          )}
+          <p className="text-[10px] text-gray-500 mt-2">{urgent.length > 0 ? `⚠ ${urgent.length} en ≤2h · click para ir` : 'click para ver detalle'}</p>
         </div>
-        {/* CARD 2: Ingresos */}
+
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
           <div className="flex items-start justify-between">
             <div>
@@ -152,7 +154,7 @@ export default function StatsGrid() {
           </div>
           <p className="text-xs text-gray-500 mt-2">{active.length} reservas activas</p>
         </div>
-        {/* CARD 3: Confirmadas */}
+
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
           <div className="flex items-start justify-between">
             <div>
@@ -164,7 +166,7 @@ export default function StatsGrid() {
           </div>
           <p className="text-xs text-gray-500 mt-2">{pending.length > 0 ? `${pending.length} pendientes` : 'Al día'}</p>
         </div>
-        {/* CARD 4: En casa */}
+
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
           <div className="flex items-start justify-between">
             <div>
@@ -177,11 +179,12 @@ export default function StatsGrid() {
           <p className="text-xs text-gray-500 mt-2">Con check-in</p>
         </div>
       </div>
+
       {showProximas && (
         <ProximasModal
           items={proximas}
           onClose={() => setShowProximas(false)}
-          onSelectGuest={(r) => setSelectedGuest(r)}
+          onSelectGuest={(r) => { setSelectedGuest(r); setSelectedRoomNumber(r.room) }}
         />
       )}
     </>
