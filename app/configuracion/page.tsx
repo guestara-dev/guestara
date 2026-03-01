@@ -4,19 +4,18 @@ import { useRouter } from 'next/navigation'
 import { useStore } from '@/lib/store'
 import { Trash2, AlertTriangle, CheckCircle, Settings, Database, ShieldAlert } from 'lucide-react'
 import AlertDialog from '@/components/AlertDialog'
-
 export default function ConfiguracionPage() {
   const { resetDashboard } = useStore()
   const router = useRouter()
   const [showConfirm, setShowConfirm] = useState(false)
   const [done, setDone] = useState(false)
   const [role, setRole] = useState<string | null>(null)
-
+  // FIX #1: Read g_auth cookie (same as middleware uses)
   useEffect(() => {
     try {
-      const cookie = document.cookie.split(';').find(c => c.trim().startsWith('session='))
+      const cookie = document.cookie.split(';').find(c => c.trim().startsWith('g_auth='))
       if (cookie) {
-        const val = JSON.parse(atob(decodeURIComponent(cookie.split('=')[1])))
+        const val = JSON.parse(atob(decodeURIComponent(cookie.split('=').slice(1).join('='))))
         setRole(val.role)
       } else {
         setRole('receptionist')
@@ -25,26 +24,22 @@ export default function ConfiguracionPage() {
       setRole('receptionist')
     }
   }, [])
-
   const handleReset = async () => {
     await resetDashboard()
     setDone(true)
     setTimeout(() => setDone(false), 3000)
   }
-
   const handleOpenSetup = () => {
     if (role === 'admin') {
       router.push('/setup')
     }
   }
-
   return (
     <div className="p-5 space-y-6 max-w-2xl">
       <div>
         <h1 className="text-xl font-bold">Configuración</h1>
         <p className="text-xs text-gray-400 mt-0.5">Ajustes del sistema Guestara</p>
       </div>
-
       {/* Setup wizard link */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <div className="flex items-center gap-3 mb-4">
@@ -69,7 +64,6 @@ export default function ConfiguracionPage() {
           </div>
         )}
       </div>
-
       {/* Danger zone */}
       <div className="bg-gray-900 border border-red-900/40 rounded-xl p-5">
         <div className="flex items-center gap-3 mb-4">
@@ -104,7 +98,6 @@ export default function ConfiguracionPage() {
           </button>
         )}
       </div>
-
       {showConfirm && (
         <AlertDialog
           open
