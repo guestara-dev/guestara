@@ -1,15 +1,24 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import { Search, Bell, Settings, LogOut, User } from 'lucide-react'
+import { Search, Bell, Settings, LogOut, User, Building2 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { useRouter } from 'next/navigation'
 
 export default function Topbar() {
   const { reservations, rooms, setSelectedGuest } = useStore()
   const router = useRouter()
-  const [query,    setQuery]    = useState('')
-  const [focused,  setFocused]  = useState(false)
+  const [query, setQuery] = useState('')
+  const [focused, setFocused] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  
+  // Obtener nombre del hotel desde localStorage (vía store indirectamente)
+  const [hotelName, setHotelName] = useState('Guestara')
+  useEffect(() => {
+    const config = localStorage.getItem('guestara_hotel_config')
+    if (config) {
+      try { setHotelName(JSON.parse(config).nombre || 'Guestara') } catch {}
+    }
+  }, [])
 
   const q = query.toLowerCase().trim()
   const results = q.length < 2 ? [] : [
@@ -37,7 +46,6 @@ export default function Topbar() {
       })),
   ]
 
-  // BUG #3 FIX: handle navigation on result click
   const handleSelect = (item: typeof results[number]) => {
     setQuery('')
     setFocused(false)
@@ -49,7 +57,6 @@ export default function Topbar() {
     }
   }
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setFocused(false)
@@ -67,7 +74,11 @@ export default function Topbar() {
 
   return (
     <header className="h-14 bg-gray-900 border-b border-gray-800 flex items-center px-5 gap-4 shrink-0">
-      {/* Search */}
+      <div className="flex items-center gap-2 mr-4">
+        <Building2 className="w-5 h-5 text-violet-500" />
+        <span className="font-bold text-sm tracking-tight text-gray-200">{hotelName}</span>
+      </div>
+
       <div ref={ref} className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"/>
         <input
@@ -77,11 +88,9 @@ export default function Topbar() {
           placeholder="Buscar huésped, habitación..."
           className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-violet-500 transition-colors placeholder:text-gray-600"/>
 
-        {/* Dropdown */}
         {focused && results.length > 0 && (
           <div className="absolute top-full mt-1.5 left-0 right-0 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
             {results.map((item, i) => (
-              // BUG #3 FIX: onClick with navigation
               <button key={`${item.type}-${item.id}-${i}`}
                 onMouseDown={e => { e.preventDefault(); handleSelect(item) }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-800 transition-colors text-left">
@@ -99,31 +108,23 @@ export default function Topbar() {
             ))}
           </div>
         )}
-        {focused && q.length >= 2 && results.length === 0 && (
-          <div className="absolute top-full mt-1.5 left-0 right-0 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 p-4 text-center">
-            <p className="text-sm text-gray-500">Sin resultados para "{query}"</p>
-          </div>
-        )}
       </div>
 
       <div className="flex-1"/>
 
-      {/* Actions */}
       <button className="relative text-gray-400 hover:text-white transition-colors">
         <Bell className="w-5 h-5"/>
       </button>
-      <button onClick={() => router.push('/configuracion')}
-        className="text-gray-400 hover:text-white transition-colors">
-        <Settings className="w-5 h-5"/>
-      </button>
-      <div className="flex items-center gap-2 bg-gray-800 rounded-xl px-3 py-1.5">
+      
+      <div className="flex items-center gap-2 bg-gray-800 rounded-xl px-3 py-1.5 ml-2">
         <div className="w-6 h-6 bg-violet-600 rounded-full flex items-center justify-center">
           <User className="w-3.5 h-3.5"/>
         </div>
         <span className="text-sm text-gray-300">Recepcionista</span>
       </div>
+
       <button onClick={() => router.push('/login')}
-        className="text-gray-500 hover:text-red-400 transition-colors">
+        className="text-gray-500 hover:text-red-400 transition-colors ml-1">
         <LogOut className="w-4 h-4"/>
       </button>
     </header>
