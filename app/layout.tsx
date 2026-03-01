@@ -5,14 +5,12 @@ import { StoreProvider } from '@/lib/store'
 import Sidebar from '@/components/Sidebar'
 import Topbar from '@/components/Topbar'
 import ClientOnly from '@/components/ClientOnly'
-
+import AutoLogout from '@/components/AutoLogout'
 const inter = Inter({ subsets: ['latin'] })
-
 export const metadata: Metadata = {
   title: 'Guestara — Hotel PMS',
   description: 'Sistema de gestión hotelera',
 }
-
 // Skeleton de carga mientras hidrata el cliente
 function AppSkeleton() {
   return (
@@ -46,7 +44,6 @@ function AppSkeleton() {
     </div>
   )
 }
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning>
@@ -62,6 +59,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </main>
               </div>
             </div>
+            {/* FIX #4: Auto-logout after 2 min inactivity */}
+            <AutoLogout />
           </ClientOnly>
         </StoreProvider>
       </body>
