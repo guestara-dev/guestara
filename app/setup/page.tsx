@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Settings, Save, CheckCircle, Clock, Building2, Mail, Phone, MapPin } from 'lucide-react'
+import { Settings, Save, CheckCircle, Clock, Building2, Mail, Phone, Home, ShieldAlert } from 'lucide-react'
 
 const HOTEL_KEY = 'guestara_hotel_config'
+const ROOMS_KEY = 'guestara_rooms_config'
 
 interface HotelConfig {
   nombre: string
@@ -12,31 +13,63 @@ interface HotelConfig {
   email: string
   checkIn: string
   checkOut: string
+  totalRooms: number
 }
 
 const defaults: HotelConfig = {
   nombre: '', direccion: '', telefono: '', email: '',
-  checkIn: '14:00', checkOut: '12:00',
+  checkIn: '14:00', checkOut: '12:00', totalRooms: 10,
 }
 
 export default function SetupPage() {
   const router = useRouter()
   const [config, setConfig] = useState<HotelConfig>(defaults)
   const [saved, setSaved] = useState(false)
+  const [role, setRole] = useState<string>('')
+  const [activeRooms, setActiveRooms] = useState<number[]>([])
 
   useEffect(() => {
     const stored = localStorage.getItem(HOTEL_KEY)
     if (stored) setConfig(JSON.parse(stored))
+    const storedRooms = localStorage.getItem(ROOMS_KEY)
+    if (storedRooms) setActiveRooms(JSON.parse(storedRooms))
+    try {
+      const cookie = document.cookie.split(';').find(c => c.trim().startsWith('session='))
+      if (cookie) {
+        const val = JSON.parse(atob(decodeURIComponent(cookie.split('=')[1])))
+        setRole(val.role)
+        if (val.role !== 'admin') router.push('/')
+      } else { router.push('/') }
+    } catch { router.push('/') }
   }, [])
 
-  const set = (k: keyof HotelConfig, v: string) =>
+  useEffect(() => {
+    const count = config.totalRooms
+    setActiveRooms(prev => {
+      const next = Array.from({length: count}, (_, i) => i + 1)
+      return next.map(n => prev.includes(n) ? n : n)
+    })
+  }, [config.totalRooms])
+
+  const toggleRoom = (n: number) => {
+    setActiveRooms(prev =>
+      prev.includes(n) ? prev.filter(r => r !== n) : [...prev, n].sort((a,b) => a-b)
+    )
+  }
+
+  const set = (k: keyof HotelConfig, v: string | number) =>
     setConfig(prev => ({ ...prev, [k]: v }))
 
   const handleSave = () => {
     localStorage.setItem(HOTEL_KEY, JSON.stringify(config))
+    localStorage.setItem(ROOMS_KEY, JSON.stringify(activeRooms))
     setSaved(true)
     setTimeout(() => { setSaved(false); router.push('/configuracion') }, 2000)
   }
+
+  if (role !== 'admin') return null
+
+  const allRooms = Array.from({length: config.totalRooms}, (_, i) => i + 1)
 
   return (
     <div className="p-5 max-w-2xl space-y-6">
@@ -46,7 +79,10 @@ export default function SetupPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold">Asistente de configuracion</h1>
-          <p className="text-xs text-gray-400">Personalizacion del hotel</p>
+          <p className="text-xs text-gray-400">Solo visible para Administrador</p>
+        </div>
+        <div className="ml-auto flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg">
+          <ShieldAlert className="w-3 h-3" /> Admin
         </div>
       </div>
 
@@ -92,9 +128,31 @@ export default function SetupPage() {
         </div>
       </div>
 
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <Home className="w-4 h-4 text-violet-400" />
+          <h2 className="font-semibold text-sm">Cabanas</h2>
+        </div>
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">Total de cabanas</label>
+          <input type="number" min={1} max={100} value={config.totalRooms} onChange={e => set('totalRooms', parseInt(e.target.value) || 1)} className="w-32 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
+        </div>
+        <div>
+          <p className="text-xs text-gray-400 mb-2">Selecciona las cabanas activas (visibles en el dashboard)</p>
+          <div className="grid grid-cols-5 gap-2">
+            {allRooms.map(n => (
+              <button key={n} onClick={() => toggleRoom(n)} className={`py-2 rounded-lg text-sm font-medium border transition-colors ${ activeRooms.includes(n) ? 'bg-violet-600 border-violet-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500' }`}>
+                {n}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">{activeRooms.length} de {config.totalRooms} cabanas activas</p>
+        </div>
+      </div>
+
       <div className="flex items-center gap-3">
         <button onClick={handleSave} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold">
-          {saved ? <><CheckCircle className="w-4 h-4" /> Guardado!</> : <><Save className="w-4 h-4" /> Guardar</>}
+          {saved ? <><CheckCircle className="w-4 h-4" /> Guardado!</> : <><Save className="w-4 h-4" /> Guardar configuracion</>}
         </button>
         <button onClick={() => router.push('/configuracion')} className="text-sm text-gray-400 hover:text-white px-3 py-2">
           Cancelar
