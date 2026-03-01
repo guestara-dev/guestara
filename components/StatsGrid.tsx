@@ -1,9 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { TrendingUp, UserCheck, Users, Clock, X } from 'lucide-react'
+import { TrendingUp, UserCheck, Users, Clock, X, ArrowRight } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { Reservation } from '@/lib/data'
-
 function parseCheckOut(co: string): Date | null {
   try {
     const [datePart, timePart] = co.split(' ')
@@ -15,8 +14,12 @@ function parseCheckOut(co: string): Date | null {
     return d
   } catch { return null }
 }
-
-function ProximasModal({ items, onClose }: { items: Reservation[]; onClose: () => void }) {
+// FIX #3: ProximasModal items are clickable to open the guest modal
+function ProximasModal({ items, onClose, onSelectGuest }: {
+  items: Reservation[]
+  onClose: () => void
+  onSelectGuest: (r: Reservation) => void
+}) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
@@ -36,14 +39,18 @@ function ProximasModal({ items, onClose }: { items: Reservation[]; onClose: () =
             const diffH = co ? Math.round((co.getTime() - now.getTime()) / 3600000) : null
             const urgent = diffH !== null && diffH <= 2
             return (
-              <div key={r.id} className={`flex items-center justify-between rounded-xl p-3 border ${
-                urgent ? 'bg-red-950/40 border-red-700/40' : 'bg-gray-800 border-gray-700/50'
-              }`}>
+              // FIX #3: click on row opens GuestModal for this reservation
+              <button
+                key={r.id}
+                onClick={() => { onSelectGuest(r); onClose() }}
+                className={`w-full flex items-center justify-between rounded-xl p-3 border text-left transition-all hover:scale-[1.01] hover:shadow-lg ${
+                  urgent ? 'bg-red-950/40 border-red-700/40 hover:border-red-500/60' : 'bg-gray-800 border-gray-700/50 hover:border-violet-600/50'
+                }`}>
                 <div>
                   <p className="text-sm font-medium">{r.guest}</p>
                   <p className="text-xs text-gray-400">Hab. {r.room} · Sale {r.checkOut}</p>
                 </div>
-                <div className="text-right">
+                <div className="flex items-center gap-2">
                   {diffH !== null ? (
                     <span className={`text-xs font-semibold ${urgent ? 'text-red-400' : 'text-amber-400'}`}>
                       {diffH <= 0 ? '¡Ahora!' : `${diffH}h`}
@@ -51,8 +58,9 @@ function ProximasModal({ items, onClose }: { items: Reservation[]; onClose: () =
                   ) : (
                     <span className="text-xs text-gray-500">Hoy</span>
                   )}
+                  <ArrowRight className="w-3.5 h-3.5 text-gray-500"/>
                 </div>
-              </div>
+              </button>
             )
           })}
         </div>
@@ -60,13 +68,11 @@ function ProximasModal({ items, onClose }: { items: Reservation[]; onClose: () =
     </div>
   )
 }
-
 export default function StatsGrid() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const [showProximas, setShowProximas] = useState(false)
-  const { reservations, extras } = useStore()
-
+  const { reservations, extras, setSelectedGuest } = useStore()
   if (!mounted) {
     return (
       <div className="grid grid-cols-4 gap-4">
@@ -85,37 +91,32 @@ export default function StatsGrid() {
       </div>
     )
   }
-
-  const active      = reservations.filter(r => !['cancelled','completed'].includes(r.status))
-  const checkedIn   = reservations.filter(r => r.status === 'checked-in')
-  const pending     = active.filter(r => r.status === 'pending')
-  const resRevenue  = active.reduce((s,r) => s + r.amount, 0)
-  const extRevenue  = (extras ?? []).reduce((s,e) => s + e.total, 0)
-  const revenue     = resRevenue + extRevenue
-
-  // Próximas a vencer: checked-in with checkout within next 24h
-  const now      = new Date()
-  const next24h  = new Date(now.getTime() + 24 * 3600000)
+  const active = reservations.filter(r => !['cancelled','completed'].includes(r.status))
+  const checkedIn = reservations.filter(r => r.status === 'checked-in')
+  const pending = active.filter(r => r.status === 'pending')
+  const resRevenue = active.reduce((s,r) => s + r.amount, 0)
+  const extRevenue = (extras ?? []).reduce((s,e) => s + e.total, 0)
+  const revenue = resRevenue + extRevenue
+  const now = new Date()
+  const next24h = new Date(now.getTime() + 24 * 3600000)
   const proximas = checkedIn.filter(r => {
     const co = parseCheckOut(r.checkOut)
-    return !co || co <= next24h   // include if today/can't parse
+    return !co || co <= next24h
   })
   const urgent = proximas.filter(r => {
     const co = parseCheckOut(r.checkOut)
     return co ? (co.getTime() - now.getTime()) / 3600000 <= 2 : false
   })
-
   const clr: Record<string,string> = {
-    amber:   'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    violet:  'bg-violet-500/10 text-violet-400 border-violet-500/20',
-    rose:    'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    violet: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+    rose: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
   }
-
   return (
     <>
       <div className="grid grid-cols-4 gap-4">
-        {/* CARD 1: Próximas a vencer — reemplaza Ocupación */}
+        {/* CARD 1: Próximas a vencer */}
         <div onClick={() => setShowProximas(true)}
           className={`bg-gray-900 border rounded-xl p-4 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg ${
             urgent.length > 0 ? 'border-red-600/50 hover:border-red-500/70 hover:shadow-red-900/30' : 'border-gray-800 hover:border-amber-600/40'
@@ -139,7 +140,6 @@ export default function StatsGrid() {
             <p className="text-xs text-gray-500 mt-2">click para ver detalle</p>
           )}
         </div>
-
         {/* CARD 2: Ingresos */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
           <div className="flex items-start justify-between">
@@ -152,7 +152,6 @@ export default function StatsGrid() {
           </div>
           <p className="text-xs text-gray-500 mt-2">{active.length} reservas activas</p>
         </div>
-
         {/* CARD 3: Confirmadas */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
           <div className="flex items-start justify-between">
@@ -165,7 +164,6 @@ export default function StatsGrid() {
           </div>
           <p className="text-xs text-gray-500 mt-2">{pending.length > 0 ? `${pending.length} pendientes` : 'Al día'}</p>
         </div>
-
         {/* CARD 4: En casa */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
           <div className="flex items-start justify-between">
@@ -179,8 +177,13 @@ export default function StatsGrid() {
           <p className="text-xs text-gray-500 mt-2">Con check-in</p>
         </div>
       </div>
-
-      {showProximas && <ProximasModal items={proximas} onClose={() => setShowProximas(false)}/>}
+      {showProximas && (
+        <ProximasModal
+          items={proximas}
+          onClose={() => setShowProximas(false)}
+          onSelectGuest={(r) => setSelectedGuest(r)}
+        />
+      )}
     </>
   )
 }
