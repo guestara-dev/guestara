@@ -1,18 +1,41 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useStore } from '@/lib/store'
-import { Trash2, RefreshCw, AlertTriangle, CheckCircle, Settings, Database } from 'lucide-react'
+import { Trash2, AlertTriangle, CheckCircle, Settings, Database, ShieldAlert } from 'lucide-react'
 import AlertDialog from '@/components/AlertDialog'
 
 export default function ConfiguracionPage() {
   const { resetDashboard } = useStore()
+  const router = useRouter()
   const [showConfirm, setShowConfirm] = useState(false)
-  const [done,        setDone]        = useState(false)
+  const [done, setDone] = useState(false)
+  const [role, setRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      const cookie = document.cookie.split(';').find(c => c.trim().startsWith('session='))
+      if (cookie) {
+        const val = JSON.parse(atob(decodeURIComponent(cookie.split('=')[1])))
+        setRole(val.role)
+      } else {
+        setRole('receptionist')
+      }
+    } catch {
+      setRole('receptionist')
+    }
+  }, [])
 
   const handleReset = async () => {
     await resetDashboard()
     setDone(true)
     setTimeout(() => setDone(false), 3000)
+  }
+
+  const handleOpenSetup = () => {
+    if (role === 'admin') {
+      router.push('/setup')
+    }
   }
 
   return (
@@ -33,13 +56,21 @@ export default function ConfiguracionPage() {
             <p className="text-xs text-gray-400">Nombre, logo, colores y horarios</p>
           </div>
         </div>
-        <a href="/setup"
-          className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
-          <Settings className="w-4 h-4"/> Abrir asistente de configuración
-        </a>
+        {role === 'admin' ? (
+          <button
+            onClick={handleOpenSetup}
+            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+            <Settings className="w-4 h-4"/> Abrir asistente de configuración
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 bg-amber-950/30 border border-amber-700/40 rounded-xl px-4 py-3">
+            <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0"/>
+            <p className="text-xs text-amber-300">Solo el Administrador puede acceder a la configuración del hotel.</p>
+          </div>
+        )}
       </div>
 
-      {/* Danger zone — Limpiar base */}
+      {/* Danger zone */}
       <div className="bg-gray-900 border border-red-900/40 rounded-xl p-5">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-red-500/10 rounded-lg border border-red-500/20">
@@ -50,7 +81,6 @@ export default function ConfiguracionPage() {
             <p className="text-xs text-gray-400">Acciones irreversibles</p>
           </div>
         </div>
-
         <div className="bg-red-950/30 border border-red-800/40 rounded-xl p-4 mb-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5"/>
@@ -63,7 +93,6 @@ export default function ConfiguracionPage() {
             </div>
           </div>
         </div>
-
         {done ? (
           <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
             <CheckCircle className="w-4 h-4"/>Base limpiada — dashboard en cero
