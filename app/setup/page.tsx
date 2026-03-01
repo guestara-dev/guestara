@@ -56,30 +56,21 @@ export default function SetupPage() {
           <h2 className="font-semibold text-sm">Identidad del hotel</h2>
         </div>
         <div>
-          abel className="text-xs text-gray-400 mb-1 block">Nombre del hotel</label>
-          <input type="text" value={config.nombre} onChange={e => set('nombre', e.target.value)} placeholder="Ej: Hotel Casa del Sol" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 text-white placeholder-gray-500" />
+          <label className="text-xs text-gray-400 mb-1 block">Nombre del hotel</label>
+          <input type="text" value={config.nombre} onChange={e => set('nombre', e.target.value)} placeholder="Hotel Casa del Sol" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500" />
         </div>
         <div>
-          abel className="text-xs text-gray-400 mb-1 block">Direccion</label>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-            <input type="text" value={config.direccion} onChange={e => set('direccion', e.target.value)} placeholder="Ej: Av. Principal 123" className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 text-white placeholder-gray-500" />
-          </div>
+          <label className="text-xs text-gray-400 mb-1 block">Direccion</label>
+          <input type="text" value={config.direccion} onChange={e => set('direccion', e.target.value)} placeholder="Av. Principal 123" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500" />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            abel className="text-xs text-gray-400 mb-1 block">Telefono</label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-              <input type="text" value={config.telefono} onChange={e => set('telefono', e.target.value)} placeholder="+56 9 1234 5678" className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 text-white placeholder-gray-500" />
-            </div>
+            <label className="text-xs text-gray-400 mb-1 block">Telefono</label>
+            <input type="text" value={config.telefono} onChange={e => set('telefono', e.target.value)} placeholder="+56 9 1234 5678" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500" />
           </div>
           <div>
-            abel className="text-xs text-gray-400 mb-1 block">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-              <input type="email" value={config.email} onChange={e => set('email', e.target.value)} placeholder="contacto@hotel.com" className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 text-white placeholder-gray-500" />
-            </div>
+            <label className="text-xs text-gray-400 mb-1 block">Email</label>
+            <input type="email" value={config.email} onChange={e => set('email', e.target.value)} placeholder="contacto@hotel.com" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500" />
           </div>
         </div>
       </div>
@@ -91,21 +82,21 @@ export default function SetupPage() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            abel className="text-xs text-gray-400 mb-1 block">Check-in</label>
-            <input type="time" value={config.checkIn} onChange={e => set('checkIn', e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 text-white" />
+            <label className="text-xs text-gray-400 mb-1 block">Check-in</label>
+            <input type="time" value={config.checkIn} onChange={e => set('checkIn', e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
           </div>
           <div>
-            abel className="text-xs text-gray-400 mb-1 block">Check-out</label>
-            <input type="time" value={config.checkOut} onChange={e => set('checkOut', e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 text-white" />
+            <label className="text-xs text-gray-400 mb-1 block">Check-out</label>
+            <input type="time" value={config.checkOut} onChange={e => set('checkOut', e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white" />
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={handleSave} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
-          {saved ? (<><CheckCircle className="w-4 h-4" /> Guardado!</>) : (<><Save className="w-4 h-4" /> Guardar configuracion</>)}
+        <button onClick={handleSave} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold">
+          {saved ? <><CheckCircle className="w-4 h-4" /> Guardado!</> : <><Save className="w-4 h-4" /> Guardar</>}
         </button>
-        <button onClick={() => router.push('/configuracion')} className="text-sm text-gray-400 hover:text-white transition-colors px-3 py-2">
+        <button onClick={() => router.push('/configuracion')} className="text-sm text-gray-400 hover:text-white px-3 py-2">
           Cancelar
         </button>
       </div>
