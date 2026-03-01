@@ -11,6 +11,12 @@ export interface NewRes {
   checkIn: string; checkOut: string; nights: number; amount: number
 }
 
+export interface CloseCajaPayload {
+  notes: string
+  roomsTotal: number; extrasTotal: number; grandTotal: number
+  checkoutsCount: number; checkinsCount: number; newReservations: number
+}
+
 interface StoreCtx {
   rooms: Room[]; reservations: Reservation[]
   extras: ReservationExtra[]; auditLog: AuditEntry[]
@@ -18,33 +24,31 @@ interface StoreCtx {
   guestProfiles: Record<string, GuestProfile>
   selectedGuest: Reservation | null
   selectedRoomNumber: string | null
-  setSelectedGuest:        (r: Reservation | null) => void
-  setSelectedRoomNumber:   (n: string | null) => void
-  addReservation:          (d: NewRes) => void
-  updateRoomStatus:        (roomNum: string, status: Room['status']) => void
-  updateResStatus:         (id: number, status: ResStatus) => void
-  checkIn:                 (id: number) => void
-  checkOut:                (id: number) => void
-  cancelReservation:       (id: number) => void
-  addExtra:                (reservationId: number, extraId: number, name: string, price: number, qty: number, note?: string) => void
-  removeExtra:             (instanceId: number) => void
+  setSelectedGuest:      (r: Reservation | null) => void
+  setSelectedRoomNumber: (n: string | null) => void
+  addReservation:     (d: NewRes) => void
+  updateRoomStatus:   (roomNum: string, status: Room['status']) => void
+  updateResStatus:    (id: number, status: ResStatus) => void
+  checkIn:            (id: number) => void
+  checkOut:           (id: number) => void
+  cancelReservation:  (id: number) => void
+  addExtra:           (reservationId: number, extraId: number, name: string, price: number, qty: number, note?: string) => void
+  removeExtra:        (instanceId: number) => void
   getExtrasForReservation: (reservationId: number) => ReservationExtra[]
-  updateGuestProfile:      (name: string, profile: Partial<GuestProfile>) => void
-  closeCaja:               (notes: string) => void
-  recordPayment:           (p: Payment) => void
+  updateGuestProfile: (name: string, profile: Partial<GuestProfile>) => void
+  closeCaja:          (payload: CloseCajaPayload) => void
+  recordPayment:      (p: Payment) => void
 }
 
-const STORE_VERSION = 'guestara_v8'
-
+const STORE_VERSION = 'guestara_v9'
 function initLS() {
   if (typeof window === 'undefined') return
   if (localStorage.getItem('_ver') !== STORE_VERSION) {
     ['rooms','reservations','extras','profiles','audit','cashClosings','payments']
-      .forEach(k => localStorage.removeItem(`g_${k}`))
+    .forEach(k => localStorage.removeItem(`g_${k}`))
     localStorage.setItem('_ver', STORE_VERSION)
   }
 }
-
 function loadLS<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback
   try { const v = localStorage.getItem(`g_${key}`); return v ? JSON.parse(v) : fallback }
@@ -59,18 +63,16 @@ const Ctx = createContext<StoreCtx | null>(null)
 export function StoreProvider({ children }: { children: ReactNode }) {
   ;(() => initLS())()
 
-  // ── State declarations (all together, in order) ──────────────────────────
-  const [rooms,        setRoomsRaw]        = useState<Room[]>(() => loadLS('rooms', initRooms))
-  const [reservations, setResRaw]          = useState<Reservation[]>(() => loadLS('reservations', initRes))
-  const [extras,       setExtrasRaw]       = useState<ReservationExtra[]>(() => loadLS('extras', []))
-  const [auditLog,     setAuditRaw]        = useState<AuditEntry[]>(() => loadLS('audit', []))
+  const [rooms, setRoomsRaw] = useState<Room[]>(() => loadLS('rooms', initRooms))
+  const [reservations, setResRaw] = useState<Reservation[]>(() => loadLS('reservations', initRes))
+  const [extras, setExtrasRaw] = useState<ReservationExtra[]>(() => loadLS('extras', []))
+  const [auditLog, setAuditRaw] = useState<AuditEntry[]>(() => loadLS('audit', []))
   const [cashClosings, setCashClosingsRaw] = useState<CashClosing[]>(() => loadLS('cashClosings', []))
-  const [payments,     setPaymentsRaw]     = useState<Payment[]>(() => loadLS('payments', []))
-  const [guestProfiles,setProfilesRaw]    = useState<Record<string,GuestProfile>>(() => loadLS('profiles', {}))
-  const [selectedGuest,      setSelectedGuest]      = useState<Reservation | null>(null)
+  const [payments, setPaymentsRaw] = useState<Payment[]>(() => loadLS('payments', []))
+  const [guestProfiles, setProfilesRaw] = useState<Record<string,GuestProfile>>(() => loadLS('profiles', {}))
+  const [selectedGuest, setSelectedGuest] = useState<Reservation | null>(null)
   const [selectedRoomNumber, setSelectedRoomNumber] = useState<string | null>(null)
 
-  // ── Persisted setters (all together, in order) ───────────────────────────
   const setRooms = useCallback((fn: Room[] | ((p: Room[]) => Room[])) => {
     setRoomsRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('rooms',n); return n })
   }, [])
@@ -87,7 +89,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setPaymentsRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('payments',n); return n })
   }, [])
 
-  // ── Audit ────────────────────────────────────────────────────────────────
   const audit = useCallback((action: string, detail: string) => {
     const entry: AuditEntry = {
       id: Date.now(), action, detail,
@@ -97,14 +98,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setAuditRaw(p => { const n = [entry,...p].slice(0,100); saveLS('audit',n); return n })
   }, [])
 
-  // ── Room helpers ─────────────────────────────────────────────────────────
   const setRoomStatus = useCallback((roomNum: string, status: Room['status']) => {
     setRooms(p => p.map(r => r.number===roomNum ? {...r, status} : r))
   }, [setRooms])
-
   const updateRoomStatus = setRoomStatus
 
-  // ── Reservation actions ──────────────────────────────────────────────────
   const updateResStatus = useCallback((id: number, status: ResStatus) => {
     setReservations(p => p.map(r => r.id===id ? {...r, status} : r))
   }, [setReservations])
@@ -162,7 +160,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [setResRaw, setRoomStatus, audit])
 
-  // ── Extras ───────────────────────────────────────────────────────────────
   const addExtra = useCallback((reservationId: number, extraId: number, name: string, price: number, qty: number, note?: string) => {
     const e: ReservationExtra = {
       instanceId: Date.now(), reservationId, extraId, name,
@@ -182,7 +179,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const getExtrasForReservation = useCallback((id: number) =>
     extras.filter(e => e.reservationId === id), [extras])
 
-  // ── Guest profiles ────────────────────────────────────────────────────────
   const updateGuestProfile = useCallback((name: string, profile: Partial<GuestProfile>) => {
     setProfilesRaw(p => {
       const n = {...p, [name]: {...p[name], ...profile, name}}
@@ -190,38 +186,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  // ── Payments ──────────────────────────────────────────────────────────────
   const recordPayment = useCallback((p: Payment) => {
     setPayments(prev => [p, ...prev])
-    audit('Pago registrado', `$${p.totalAmount} USD — ${p.guest} · ${p.method}${p.authCode ? ` · Auth: ${p.authCode}` : ''}`)
+    audit('Pago registrado', `$${p.totalAmount} — ${p.guest} · ${p.method}${p.authCode ? ` · Auth: ${p.authCode}` : ''}`)
   }, [setPayments, audit])
 
-  // ── Cierre de caja ────────────────────────────────────────────────────────
-  const closeCaja = useCallback((notes: string) => {
-    setResRaw(currRes => {
-      setExtrasRaw(currExtras => {
-        const roomsTotal  = currRes.filter(r => r.status !== 'cancelled').reduce((s,r) => s + r.amount, 0)
-        const extrasTotal = currExtras.reduce((s,e) => s + e.total, 0)
-        const grandTotal  = roomsTotal + extrasTotal
-        const closing: CashClosing = {
-          id: Date.now(),
-          date: new Date().toLocaleDateString('es-CL'),
-          closedAt: new Date().toLocaleTimeString('es-CL'),
-          user: 'Recepcionista',
-          checkoutsCount:  currRes.filter(r => r.status === 'completed').length,
-          checkinsCount:   currRes.filter(r => r.status === 'checked-in').length,
-          newReservations: currRes.filter(r => ['pending','confirmed'].includes(r.status)).length,
-          roomsTotal, extrasTotal, grandTotal, notes,
-        }
-        setCashClosings(p => [closing, ...p])
-        audit('Cierre de caja', `Total: $${grandTotal} USD`)
-        return currExtras
-      })
-      return currRes
-    })
-  }, [setResRaw, setExtrasRaw, setCashClosings, audit])
+  const closeCaja = useCallback((payload: CloseCajaPayload) => {
+    const closing: CashClosing = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString('es-CL'),
+      closedAt: new Date().toLocaleTimeString('es-CL'),
+      user: 'Recepcionista',
+      checkoutsCount: payload.checkoutsCount,
+      checkinsCount: payload.checkinsCount,
+      newReservations: payload.newReservations,
+      roomsTotal: payload.roomsTotal,
+      extrasTotal: payload.extrasTotal,
+      grandTotal: payload.grandTotal,
+      notes: payload.notes,
+    }
+    setCashClosings(p => [closing, ...p])
+    audit('Cierre de caja', `Total: $${payload.grandTotal.toLocaleString()}`)
+  }, [setCashClosings, audit])
 
-  // ── Provider ──────────────────────────────────────────────────────────────
   return (
     <Ctx.Provider value={{
       rooms, reservations, extras, auditLog,
