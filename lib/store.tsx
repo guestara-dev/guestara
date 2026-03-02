@@ -19,6 +19,8 @@ interface StoreCtx {
   extras: ReservationExtra[]; auditLog: AuditEntry[]
   cashClosings: CashClosing[]; payments: Payment[]
   guestProfiles: Record<string, GuestProfile>
+    hotelLogo: string | null
+    setHotelLogo: (logo: string | null) => void
   selectedGuest: Reservation | null
   selectedRoomNumber: string | null
   setSelectedGuest: (r: Reservation | null) => void
@@ -64,6 +66,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [cashClosings, setCashClosingsRaw] = useState<CashClosing[]>(() => loadLS('cashClosings', []))
   const [payments, setPaymentsRaw] = useState<Payment[]>(() => loadLS('payments', []))
   const [guestProfiles, setProfilesRaw] = useState<Record<string,GuestProfile>>(() => loadLS('profiles', {}))
+    const [hotelLogo, setHotelLogoRaw] = useState<string | null>(() => loadLS('hotelLogo', null))
   const [selectedGuest, setSelectedGuest] = useState<Reservation | null>(null)
   const [selectedRoomNumber, setSelectedRoomNumber] = useState<string | null>(null)
   const setRooms = useCallback((fn: Room[] | ((p: Room[]) => Room[])) => {
@@ -201,6 +204,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     saveLS('audit', [])
     audit('Reset', 'Dashboard limpiado — todos los datos borrados')
   }, [setRooms, setReservations, setExtras, setPayments, setCashClosings, audit])
+    const setHotelLogo = useCallback((logo: string | null) => {
+          setHotelLogoRaw(logo)
+          saveLS('hotelLogo', logo)
+        }, [])
   return (
     <Ctx.Provider value={{
       rooms, reservations, extras, auditLog,
@@ -212,6 +219,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addExtra, removeExtra, getExtrasForReservation,
       updateGuestProfile, closeCaja, recordPayment,
       resetDashboard,
+            hotelLogo, setHotelLogo,
     }}>
       {children}
     </Ctx.Provider>
