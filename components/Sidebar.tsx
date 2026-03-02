@@ -17,7 +17,7 @@ const nav = [
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const { reservations } = useStore()
+  const { reservations, hotelLogo } = useStore()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -28,8 +28,12 @@ export default function Sidebar() {
     <aside className="w-60 bg-gray-900 border-r border-gray-800 flex flex-col shrink-0">
       <div className="p-5 border-b border-gray-800">
         <div className="flex items-center gap-2">
-          <Hotel className="w-6 h-6 text-violet-400"/>
-          <span className="text-lg font-bold">Onix</span>
+{hotelLogo ? (
+            <img src={hotelLogo} alt="Logo" className="h-8 w-8 object-contain rounded" />
+          ) : (
+            <Hotel className="w-6 h-6 text-violet-400"/>
+          )}
+          <span className="text-lg font-bold">{hotelLogo ? '' : 'Onix'}</span>
         </div>
         <p className="text-[10px] text-gray-500 mt-0.5">Hotel Boutique Del Mar</p>
       </div>
