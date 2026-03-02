@@ -8,7 +8,7 @@ import ClientOnly from '@/components/ClientOnly'
 import AutoLogout from '@/components/AutoLogout'
 const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
-  title: 'Guestara — Hotel PMS',
+  title: 'Onix — Hotel PMS',
   description: 'Sistema de gestión hotelera',
 }
 // Skeleton de carga mientras hidrata el cliente
