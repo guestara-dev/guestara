@@ -1,4 +1,4 @@
-# Guestara 🏨
+# Onix 🏨
 
 Hotel Management con IA — MVP Dashboard
 
@@ -14,7 +14,7 @@ Abre http://localhost:3000
 ## Estructura
 
 ```
-guestara/
+onix/
 ├── app/
 │   ├── layout.tsx
 │   └── page.tsx
