@@ -1,15 +1,23 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStore } from '@/lib/store'
 import { Trash2, AlertTriangle, CheckCircle, Settings, Database, ShieldAlert } from 'lucide-react'
 import AlertDialog from '@/components/AlertDialog'
 export default function ConfiguracionPage() {
-  const { resetDashboard } = useStore()
+  const { resetDashboard, hotelLogo, setHotelLogo } = useStore()
   const router = useRouter()
   const [showConfirm, setShowConfirm] = useState(false)
   const [done, setDone] = useState(false)
   const [role, setRole] = useState<string | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+          const file = e.target.files?.[0]
+          if (!file) return
+          const reader = new FileReader()
+          reader.onload = (ev) => setHotelLogo(ev.target?.result as string)
+          reader.readAsDataURL(file)
+        }
   // FIX #1: Read g_auth cookie (same as middleware uses)
   useEffect(() => {
     try {
@@ -63,6 +71,40 @@ export default function ConfiguracionPage() {
             <p className="text-xs text-amber-300">Solo el Administrador puede acceder a la configuración del hotel.</p>
           </div>
         )}
+
+                {/* Logo del hotel */}
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-4">
+                            <div className="flex items-center gap-3 mb-4">
+                                          <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20">
+                                                          <Settings className="w-4 h-4 text-violet-400"/>
+                                                        </div>
+                                          <div>
+                                                          <h2 className="font-semibold text-sm">Logo del hotel</h2>
+                                                          <p className="text-xs text-gray-400">Imagen que aparece en la barra lateral</p>
+                                                        </div>
+                                        </div>
+                            <div className="flex items-center gap-4">
+                                          {hotelLogo ? (
+                    <img src={hotelLogo} alt="Logo actual" className="h-16 w-16 object-contain rounded-xl border border-gray-700 bg-gray-800 p-1" />
+                  ) : (
+                    <div className="h-16 w-16 rounded-xl border border-dashed border-gray-600 bg-gray-800 flex items-center justify-center">
+                                      <span className="text-xs text-gray-500">Sin logo</span>
+                                    </div>
+                  )}
+                                          <div className="flex flex-col gap-2">
+                                                          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                                                          <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                                                            Subir logo
+                                                                          </button>
+                                                          {hotelLogo && (
+                      <button onClick={() => setHotelLogo(null)} className="flex items-center gap-2 bg-red-600/20 hover:bg-red-600/40 border border-red-600/40 text-red-300 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                          Eliminar logo
+                                        </button>
+                    )}
+                                                          <p className="text-xs text-gray-500">PNG, JPG o SVG. Max 2MB.</p>
+                                                        </div>
+                                        </div>
+                          </div>
       </div>
       {/* Danger zone */}
       <div className="bg-gray-900 border border-red-900/40 rounded-xl p-5">
