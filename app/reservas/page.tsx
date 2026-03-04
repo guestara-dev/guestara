@@ -8,7 +8,6 @@ import PaymentModal from '@/components/PaymentModal'
 import GuestModal from '@/components/GuestModal'
 
 type Status = 'all'|'pending'|'confirmed'|'checked-in'|'completed'|'cancelled'
-
 const statusLabel: Record<string,string> = {
   pending:'Pendiente', confirmed:'Confirmada', 'checked-in':'En Casa',
   completed:'Completada', cancelled:'Cancelada',
@@ -18,17 +17,15 @@ const statusCls: Record<string,string> = {
   'checked-in':'bg-blue-500/20 text-blue-300', completed:'bg-gray-500/20 text-gray-400',
   cancelled:'bg-red-500/20 text-red-400',
 }
-
 interface Confirm { title:string; desc:string; action:()=>void; variant:'danger'|'warning' }
 
 export default function ReservasPage() {
   const { reservations, extras, checkIn, cancelReservation, setSelectedGuest } = useStore()
-
-  const [filter,       setFilter]       = useState<Status>('all')
-  const [search,       setSearch]       = useState('')
-  const [confirm,      setConfirm]      = useState<Confirm|null>(null)
-  const [payRes,       setPayRes]       = useState<Reservation|null>(null)   // BUG #5
-  const [viewGuest,    setViewGuest]    = useState<Reservation|null>(null)
+  const [filter,     setFilter]     = useState<Status>('all')
+  const [search,     setSearch]     = useState('')
+  const [confirm,    setConfirm]    = useState<Confirm|null>(null)
+  const [payRes,     setPayRes]     = useState<Reservation|null>(null)
+  const [showGuest,  setShowGuest]  = useState(false)
 
   // BUG #8 FIX: total includes extras
   const totalRevenue = reservations
@@ -47,6 +44,15 @@ export default function ReservasPage() {
   const ask = (title:string, desc:string, action:()=>void, variant:'danger'|'warning') =>
     setConfirm({title,desc,action,variant})
 
+  const openGuest = (r: Reservation) => {
+    setSelectedGuest(r)
+    setShowGuest(true)
+  }
+  const closeGuest = () => {
+    setSelectedGuest(null)
+    setShowGuest(false)
+  }
+
   return (
     <div className="p-5 space-y-5">
       {/* Header */}
@@ -55,13 +61,12 @@ export default function ReservasPage() {
           <h1 className="text-xl font-bold">Reservas</h1>
           {/* BUG #8 FIX: shows total with extras */}
           <p className="text-xs text-gray-400 mt-0.5">
-            {reservations.filter(r=>!['cancelled'].includes(r.status)).length} activas ·{' '}
+            {reservations.filter(r=>!['cancelled'].includes(r.status)).length} activas &middot;{' '}
             <span className="text-emerald-400 font-medium">${totalRevenue} USD</span>
             {(extras??[]).length>0 && <span className="text-gray-500"> (incl. extras)</span>}
           </p>
         </div>
       </div>
-
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative">
@@ -80,7 +85,6 @@ export default function ReservasPage() {
           ))}
         </div>
       </div>
-
       {/* Table */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
@@ -96,18 +100,18 @@ export default function ReservasPage() {
               {filtered.length === 0 ? (
                 <tr><td colSpan={10} className="text-center py-12 text-gray-500 text-sm">Sin resultados</td></tr>
               ) : filtered.map(r => {
-                const resExtras    = (extras??[]).filter(e=>e.reservationId===r.id)
-                const extSubtotal  = resExtras.reduce((s,e)=>s+e.total,0)
+                const resExtras = (extras??[]).filter(e=>e.reservationId===r.id)
+                const extSubtotal = resExtras.reduce((s,e)=>s+e.total,0)
                 return (
                   <tr key={r.id} className="border-b border-gray-800/40 hover:bg-gray-800/20">
                     <td className="px-3 py-3 text-sm font-medium cursor-pointer hover:text-violet-400 whitespace-nowrap"
-                      onClick={()=>setViewGuest(r)}>{r.guest}</td>
+                      onClick={()=>openGuest(r)}>{r.guest}</td>
                     <td className="px-3 py-3 text-sm text-gray-300">{r.room}</td>
                     <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">{r.checkIn}</td>
                     <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">{r.checkOut}</td>
                     <td className="px-3 py-3 text-xs text-gray-400 text-center">{r.nights}</td>
                     <td className="px-3 py-3 text-sm">${r.amount}</td>
-                    <td className="px-3 py-3 text-sm text-blue-400">{extSubtotal>0?`$${extSubtotal}`:'—'}</td>
+                    <td className="px-3 py-3 text-sm text-blue-400">{extSubtotal>0?`$${extSubtotal}`:'\u2014'}</td>
                     <td className="px-3 py-3 text-sm font-bold text-emerald-400">${r.amount+extSubtotal}</td>
                     <td className="px-3 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${statusCls[r.status]}`}>
@@ -144,10 +148,9 @@ export default function ReservasPage() {
           </table>
         </div>
       </div>
-
       {/* BUG #5 FIX: payment modal before checkout */}
       {payRes && (() => {
-        const resExtras   = (extras??[]).filter(e=>e.reservationId===payRes.id)
+        const resExtras = (extras??[]).filter(e=>e.reservationId===payRes.id)
         const extSubtotal = resExtras.reduce((s,e)=>s+e.total,0)
         return (
           <PaymentModal
@@ -161,8 +164,8 @@ export default function ReservasPage() {
           />
         )
       })()}
-
-      {viewGuest && <GuestModal onClose={()=>setViewGuest(null)}/>}
+      {/* FIX: GuestModal uses store selectedGuest - pass via setSelectedGuest */}
+      {showGuest && <GuestModal onClose={closeGuest}/>}
       {confirm && (
         <AlertDialog open title={confirm.title} description={confirm.desc}
           variant={confirm.variant} confirmLabel="Confirmar" cancelLabel="Cancelar"
