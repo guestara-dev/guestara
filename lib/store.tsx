@@ -19,14 +19,16 @@ interface StoreCtx {
   extras: ReservationExtra[]; auditLog: AuditEntry[]
   cashClosings: CashClosing[]; payments: Payment[]
   guestProfiles: Record<string, GuestProfile>
-    hotelLogo: string | null
-    setHotelLogo: (logo: string | null) => void
+  hotelLogo: string | null
+  setHotelLogo: (logo: string | null) => void
   selectedGuest: Reservation | null
   selectedRoomNumber: string | null
   setSelectedGuest: (r: Reservation | null) => void
   setSelectedRoomNumber: (n: string | null) => void
   addReservation: (d: NewRes) => void
   updateRoomStatus: (roomNum: string, status: Room['status']) => void
+  updateRoom: (roomNum: string, patch: Partial<Room>) => void
+  setRooms: (rooms: Room[]) => void
   updateResStatus: (id: number, status: ResStatus) => void
   checkIn: (id: number) => void
   checkOut: (id: number) => void
@@ -39,7 +41,7 @@ interface StoreCtx {
   recordPayment: (p: Payment) => void
   resetDashboard: () => void
 }
-const STORE_VERSION = 'guestara_v10'
+const STORE_VERSION = 'guestara_v11'
 function initLS() {
   if (typeof window === 'undefined') return
   if (localStorage.getItem('_ver') !== STORE_VERSION) {
@@ -66,7 +68,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [cashClosings, setCashClosingsRaw] = useState<CashClosing[]>(() => loadLS('cashClosings', []))
   const [payments, setPaymentsRaw] = useState<Payment[]>(() => loadLS('payments', []))
   const [guestProfiles, setProfilesRaw] = useState<Record<string,GuestProfile>>(() => loadLS('profiles', {}))
-    const [hotelLogo, setHotelLogoRaw] = useState<string | null>(() => loadLS('hotelLogo', null))
+  const [hotelLogo, setHotelLogoRaw] = useState<string | null>(() => loadLS('hotelLogo', null))
   const [selectedGuest, setSelectedGuest] = useState<Reservation | null>(null)
   const [selectedRoomNumber, setSelectedRoomNumber] = useState<string | null>(null)
   const setRooms = useCallback((fn: Room[] | ((p: Room[]) => Room[])) => {
@@ -96,12 +98,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setRooms(p => p.map(r => r.number===roomNum ? {...r, status} : r))
   }, [setRooms])
   const updateRoomStatus = setRoomStatus
+  const updateRoom = useCallback((roomNum: string, patch: Partial<Room>) => {
+    setRooms(p => p.map(r => r.number===roomNum ? {...r, ...patch} : r))
+    audit('Habitación editada', `Hab. ${roomNum} actualizada`)
+  }, [setRooms, audit])
   const updateResStatus = useCallback((id: number, status: ResStatus) => {
     setReservations(p => p.map(r => r.id===id ? {...r, status} : r))
   }, [setReservations])
-  // FIX #2: addReservation does NOT change room to 'occupied'
-  // The room stays 'available' (reserved but not yet checked-in)
-  // Only checkIn() changes room to 'occupied'
   const addReservation = useCallback((d: NewRes) => {
     const newRes: Reservation = {
       id: Date.now(), guest: d.guest, room: d.roomNumber,
@@ -204,22 +207,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     saveLS('audit', [])
     audit('Reset', 'Dashboard limpiado — todos los datos borrados')
   }, [setRooms, setReservations, setExtras, setPayments, setCashClosings, audit])
-    const setHotelLogo = useCallback((logo: string | null) => {
-          setHotelLogoRaw(logo)
-          saveLS('hotelLogo', logo)
-        }, [])
+  const setHotelLogo = useCallback((logo: string | null) => {
+    setHotelLogoRaw(logo)
+    saveLS('hotelLogo', logo)
+  }, [])
   return (
     <Ctx.Provider value={{
       rooms, reservations, extras, auditLog,
       cashClosings, payments, guestProfiles,
       selectedGuest, selectedRoomNumber,
       setSelectedGuest, setSelectedRoomNumber,
-      addReservation, updateRoomStatus, updateResStatus,
+      addReservation, updateRoomStatus, updateRoom, setRooms, updateResStatus,
       checkIn, checkOut, cancelReservation,
       addExtra, removeExtra, getExtrasForReservation,
       updateGuestProfile, closeCaja, recordPayment,
       resetDashboard,
-            hotelLogo, setHotelLogo,
+      hotelLogo, setHotelLogo,
     }}>
       {children}
     </Ctx.Provider>
