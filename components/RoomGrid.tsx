@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useStore } from '@/lib/store'FIX: room click functional in RoomGrid (opens relevant modals)
+import { useStore } from '@/lib/store'
 import { Room } from '@/lib/data'
 import { Plus, Wrench, Sparkles, User, X, CheckCircle, Calendar } from 'lucide-react'
 
@@ -42,11 +42,13 @@ function RoomStatusModal({ room, onClose }: { room: Room; onClose: () => void })
 }
 
 function RoomCard({ room, onManage }: { room: Room; onManage: (r: Room) => void }) {
+  const { setSelectedRoomNumber, setSelectedGuest, reservations } = useStore()
   const typeTag = room.type === 'single' ? 'S' : 'D'
   
   if (room.status === 'available') {
     return (
-      <div className="group bg-gray-900/40 border border-gray-800 rounded-xl p-2.5 hover:border-violet-500/50 transition-all cursor-default">
+      <div onClick={() => setSelectedRoomNumber(room.number)}
+        className="group bg-gray-900/40 border border-gray-800 rounded-xl p-2.5 hover:border-violet-500/50 transition-all cursor-pointer">
         <div className="flex items-start justify-between">
           <span className="text-base font-semibold text-gray-400 group-hover:text-violet-400 transition-colors leading-none">{room.number}</span>
           <span className="text-[9px] bg-gray-800 text-gray-500 px-1 py-0.5 rounded">{typeTag}</span>
@@ -60,10 +62,11 @@ function RoomCard({ room, onManage }: { room: Room; onManage: (r: Room) => void 
       </div>
     )
   }
-
   if (room.status === 'occupied') {
+    const res = reservations.find(r => r.room === room.number && r.status === 'checked-in')
     return (
-      <div className="bg-violet-600/10 border border-violet-500/30 rounded-xl p-2.5 relative overflow-hidden group">
+      <div onClick={() => res && setSelectedGuest(res)}
+        className="bg-violet-600/10 border border-violet-500/30 rounded-xl p-2.5 relative overflow-hidden group cursor-pointer">
         <div className="flex items-start justify-between relative z-10">
           <span className="text-base font-semibold text-violet-300 leading-none">{room.number}</span>
           <span className="text-[9px] bg-violet-500/20 text-violet-300 px-1 py-0.5 rounded">{typeTag}</span>
@@ -80,7 +83,6 @@ function RoomCard({ room, onManage }: { room: Room; onManage: (r: Room) => void 
       </div>
     )
   }
-
   if (room.status === 'cleaning') {
     return (
       <div onClick={() => onManage(room)} 
@@ -95,7 +97,6 @@ function RoomCard({ room, onManage }: { room: Room; onManage: (r: Room) => void 
       </div>
     )
   }
-
   return (
     <div onClick={() => onManage(room)} 
       className="border border-gray-600/50 bg-gray-800/30 rounded-xl p-2.5 cursor-pointer hover:bg-gray-800/50 hover:opacity-70 opacity-50 transition-all">
@@ -111,13 +112,11 @@ function RoomCard({ room, onManage }: { room: Room; onManage: (r: Room) => void 
 }
 
 export default function RoomGrid() {
-  const { rooms, reservations } = useStore()
+  const { rooms } = useStore()
   const [mounted, setMounted] = useState(false)
   const [managingRoom, setManagingRoom] = useState<Room | null>(null)
-
   useEffect(() => setMounted(true), [])
-
-  // FIX: Filter rooms by enabled status
+  
   const activeRooms = rooms.filter(r => r.enabled)
   const disabledCount = rooms.length - activeRooms.length
 
@@ -136,7 +135,6 @@ export default function RoomGrid() {
           <RoomCard key={room.number} room={room} onManage={setManagingRoom} />
         ))}
       </div>
-
       {managingRoom && <RoomStatusModal room={managingRoom} onClose={() => setManagingRoom(null)} />}
     </div>
   )
