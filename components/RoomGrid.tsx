@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useStore } from '@/lib/store'
+import { useStore } from '@/lib/store'FIX: room click functional in RoomGrid (opens relevant modals)
 import { Room } from '@/lib/data'
 import { Plus, Wrench, Sparkles, User, X, CheckCircle, Calendar } from 'lucide-react'
 
