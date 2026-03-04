@@ -61,7 +61,7 @@ export default function ReservationModal({ onClose, preRoomNumber }: Props) {
   }, [preRoomNumber, preType])
 
   const available = useMemo(() =>
-    rooms.filter(r => r.type===type && r.status==='available'), [rooms, type])
+    rooms.filter(r => r.type===type && r.status==='available' && r.enabled !== false), [rooms, type])
 
   const dur = calcDuration(checkIn, checkInTime, checkOut, checkOutTime)
   const amount = Math.max(1, dur.nights) * prices[type]
@@ -177,7 +177,7 @@ export default function ReservationModal({ onClose, preRoomNumber }: Props) {
               <label className="text-sm text-gray-400 block mb-2">Tipo</label>
               <div className="grid grid-cols-2 gap-2">
                 {(['single','double'] as RoomType[]).map(t => {
-                  const av = rooms.filter(r => r.type===t && r.status==='available').length
+                  const av = rooms.filter(r => r.type===t && r.status==='available' && r.enabled !== false).length
                   const locked = !!preRoomNumber
                   return (
                     <button key={t} type="button"
@@ -298,30 +298,30 @@ export default function ReservationModal({ onClose, preRoomNumber }: Props) {
           </form>
         ) : (
           <div className="p-6 text-center space-y-6">
-             <div className="w-16 h-16 bg-violet-500/10 border border-violet-500/20 rounded-full flex items-center justify-center mx-auto">
-               <CheckCircle className="w-8 h-8 text-violet-400" />
-             </div>
-             <div>
-               <h3 className="text-lg font-semibold text-white">¿Hacer check-in ahora?</h3>
-               <p className="text-sm text-gray-400 mt-2">
-                 La reserva para {guest} en la Hab. {room} ha sido creada. 
-                 ¿Deseas realizar el check-in automático asociado a esta reserva?
-               </p>
-             </div>
-             <div className="grid grid-cols-2 gap-3">
-               <button 
-                 onClick={handleAutoCheckIn}
-                 className="bg-violet-600 hover:bg-violet-500 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-violet-900/40"
-               >
-                 Hacer Check-in
-               </button>
-               <button 
-                 onClick={onClose}
-                 className="bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-xl text-sm font-medium transition-all"
-               >
-                 Después
-               </button>
-             </div>
+            <div className="w-16 h-16 bg-violet-500/10 border border-violet-500/20 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle className="w-8 h-8 text-violet-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white">¿Hacer check-in ahora?</h3>
+              <p className="text-sm text-gray-400 mt-2">
+                La reserva para {guest} en la Hab. {room} ha sido creada. <br />
+                ¿Deseas realizar el check-in automático asociado a esta reserva?
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={handleAutoCheckIn}
+                className="bg-violet-600 hover:bg-violet-500 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-violet-900/40"
+              >
+                Hacer Check-in
+              </button>
+              <button 
+                onClick={onClose}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-xl text-sm font-medium transition-all"
+              >
+                Después
+              </button>
+            </div>
           </div>
         )}
       </div>
