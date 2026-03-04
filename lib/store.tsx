@@ -1,19 +1,42 @@
 'use client'
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react'
 import {
   Room, Reservation, ResStatus, ReservationExtra,
   GuestProfile, AuditEntry, CashClosing, Payment,
   rooms as initRooms, reservations as initRes,
 } from './data'
+
+export interface HotelConfig {
+  nombre: string
+  direccion: string
+  telefono: string
+  email: string
+  checkIn: string
+  checkOut: string
+  totalRooms: number
+}
+
+const hotelDefaults: HotelConfig = {
+  nombre: 'Hotel Onix',
+  direccion: 'Calle Principal 123',
+  telefono: '+56 9 1234 5678',
+  email: 'contacto@hotelonix.cl',
+  checkIn: '14:00',
+  checkOut: '12:00',
+  totalRooms: 10,
+}
+
 export interface NewRes {
   guest: string; roomNumber: string
   checkIn: string; checkOut: string; nights: number; amount: number
 }
+
 export interface CloseCajaPayload {
   notes: string
   roomsTotal: number; extrasTotal: number; grandTotal: number
   checkoutsCount: number; checkinsCount: number; newReservations: number
 }
+
 interface StoreCtx {
   rooms: Room[]; reservations: Reservation[]
   extras: ReservationExtra[]; auditLog: AuditEntry[]
@@ -21,6 +44,8 @@ interface StoreCtx {
   guestProfiles: Record<string, GuestProfile>
   hotelLogo: string | null
   setHotelLogo: (logo: string | null) => void
+  hotelConfig: HotelConfig
+  setHotelConfig: (config: HotelConfig) => void
   selectedGuest: Reservation | null
   selectedRoomNumber: string | null
   setSelectedGuest: (r: Reservation | null) => void
@@ -41,70 +66,95 @@ interface StoreCtx {
   recordPayment: (p: Payment) => void
   resetDashboard: () => void
 }
+
 const STORE_VERSION = 'guestara_v11'
+
 function initLS() {
   if (typeof window === 'undefined') return
   if (localStorage.getItem('_ver') !== STORE_VERSION) {
-    ['rooms','reservations','extras','profiles','audit','cashClosings','payments']
+    ['rooms','reservations','extras','profiles','audit','cashClosings','payments','hotelConfig']
     .forEach(k => localStorage.removeItem(`g_${k}`))
     localStorage.setItem('_ver', STORE_VERSION)
   }
 }
+
 function loadLS<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback
-  try { const v = localStorage.getItem(`g_${key}`); return v ? JSON.parse(v) : fallback }
-  catch { return fallback }
+  try {
+    const v = localStorage.getItem(`g_${key}`);
+    return v ? JSON.parse(v) : fallback
+  } catch {
+    return fallback
+  }
 }
+
 function saveLS<T>(key: string, val: T) {
-  try { localStorage.setItem(`g_${key}`, JSON.stringify(val)) } catch {}
+  try {
+    localStorage.setItem(`g_${key}`, JSON.stringify(val))
+  } catch {}
 }
+
 const Ctx = createContext<StoreCtx | null>(null)
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   ;(() => initLS())()
+
   const [rooms, setRoomsRaw] = useState<Room[]>(() => loadLS('rooms', initRooms))
   const [reservations, setResRaw] = useState<Reservation[]>(() => loadLS('reservations', initRes))
   const [extras, setExtrasRaw] = useState<ReservationExtra[]>(() => loadLS('extras', []))
   const [auditLog, setAuditRaw] = useState<AuditEntry[]>(() => loadLS('audit', []))
   const [cashClosings, setCashClosingsRaw] = useState<CashClosing[]>(() => loadLS('cashClosings', []))
   const [payments, setPaymentsRaw] = useState<Payment[]>(() => loadLS('payments', []))
-  const [guestProfiles, setProfilesRaw] = useState<Record<string,GuestProfile>>(() => loadLS('profiles', {}))
+  const [guestProfiles, setProfilesRaw] = useState<Record<string, GuestProfile>>(() => loadLS('profiles', {}))
   const [hotelLogo, setHotelLogoRaw] = useState<string | null>(() => loadLS('hotelLogo', null))
+  const [hotelConfig, setHotelConfigRaw] = useState<HotelConfig>(() => loadLS('hotelConfig', hotelDefaults))
   const [selectedGuest, setSelectedGuest] = useState<Reservation | null>(null)
   const [selectedRoomNumber, setSelectedRoomNumber] = useState<string | null>(null)
+
   const setRooms = useCallback((fn: Room[] | ((p: Room[]) => Room[])) => {
-    setRoomsRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('rooms',n); return n })
+    setRoomsRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('rooms', n); return n })
   }, [])
+
   const setReservations = useCallback((fn: Reservation[] | ((p: Reservation[]) => Reservation[])) => {
-    setResRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('reservations',n); return n })
+    setResRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('reservations', n); return n })
   }, [])
+
   const setExtras = useCallback((fn: ReservationExtra[] | ((p: ReservationExtra[]) => ReservationExtra[])) => {
-    setExtrasRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('extras',n); return n })
+    setExtrasRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('extras', n); return n })
   }, [])
+
   const setCashClosings = useCallback((fn: CashClosing[] | ((p: CashClosing[]) => CashClosing[])) => {
-    setCashClosingsRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('cashClosings',n); return n })
+    setCashClosingsRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('cashClosings', n); return n })
   }, [])
+
   const setPayments = useCallback((fn: Payment[] | ((p: Payment[]) => Payment[])) => {
-    setPaymentsRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('payments',n); return n })
+    setPaymentsRaw(p => { const n = typeof fn==='function'?fn(p):fn; saveLS('payments', n); return n })
   }, [])
+
   const audit = useCallback((action: string, detail: string) => {
     const entry: AuditEntry = {
       id: Date.now(), action, detail,
       user: 'Recepcionista',
       timestamp: new Date().toLocaleString('es-CL'),
     }
-    setAuditRaw(p => { const n = [entry,...p].slice(0,100); saveLS('audit',n); return n })
+    setAuditRaw(p => { const n = [entry,...p].slice(0,100); saveLS('audit', n); return n })
   }, [])
+
   const setRoomStatus = useCallback((roomNum: string, status: Room['status']) => {
     setRooms(p => p.map(r => r.number===roomNum ? {...r, status} : r))
   }, [setRooms])
+
   const updateRoomStatus = setRoomStatus
+
   const updateRoom = useCallback((roomNum: string, patch: Partial<Room>) => {
     setRooms(p => p.map(r => r.number===roomNum ? {...r, ...patch} : r))
     audit('Habitación editada', `Hab. ${roomNum} actualizada`)
   }, [setRooms, audit])
+
   const updateResStatus = useCallback((id: number, status: ResStatus) => {
     setReservations(p => p.map(r => r.id===id ? {...r, status} : r))
   }, [setReservations])
+
   const addReservation = useCallback((d: NewRes) => {
     const newRes: Reservation = {
       id: Date.now(), guest: d.guest, room: d.roomNumber,
@@ -114,6 +164,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setReservations(p => [newRes, ...p])
     audit('Nueva reserva', `${d.guest} — Hab. ${d.roomNumber} (${d.checkIn}→${d.checkOut})`)
   }, [setReservations, audit])
+
   const checkIn = useCallback((id: number) => {
     setResRaw(curr => {
       const res = curr.find(r => r.id===id)
@@ -127,6 +178,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return updated
     })
   }, [setResRaw, setRoomStatus, audit])
+
   const checkOut = useCallback((id: number) => {
     setResRaw(curr => {
       const res = curr.find(r => r.id===id)
@@ -140,6 +192,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return updated
     })
   }, [setResRaw, setRoomStatus, audit])
+
   const cancelReservation = useCallback((id: number) => {
     setResRaw(curr => {
       const res = curr.find(r => r.id===id)
@@ -153,6 +206,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return updated
     })
   }, [setResRaw, setRoomStatus, audit])
+
   const addExtra = useCallback((reservationId: number, extraId: number, name: string, price: number, qty: number, note?: string) => {
     const e: ReservationExtra = {
       instanceId: Date.now(), reservationId, extraId, name,
@@ -165,20 +219,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return curr
     })
   }, [setExtras, setResRaw, audit])
-  const removeExtra = useCallback((instanceId: number) =>
-    setExtras(p => p.filter(e => e.instanceId !== instanceId)), [setExtras])
-  const getExtrasForReservation = useCallback((id: number) =>
-    extras.filter(e => e.reservationId === id), [extras])
+
+  const removeExtra = useCallback((instanceId: number) => setExtras(p => p.filter(e => e.instanceId !== instanceId)), [setExtras])
+
+  const getExtrasForReservation = useCallback((id: number) => extras.filter(e => e.reservationId === id), [extras])
+
   const updateGuestProfile = useCallback((name: string, profile: Partial<GuestProfile>) => {
     setProfilesRaw(p => {
       const n = {...p, [name]: {...p[name], ...profile, name}}
       saveLS('profiles', n); return n
     })
   }, [])
+
   const recordPayment = useCallback((p: Payment) => {
     setPayments(prev => [p, ...prev])
     audit('Pago registrado', `$${p.totalAmount} — ${p.guest} · ${p.method}${p.authCode ? ` · Auth: ${p.authCode}` : ''}`)
   }, [setPayments, audit])
+
   const closeCaja = useCallback((payload: CloseCajaPayload) => {
     const closing: CashClosing = {
       id: Date.now(),
@@ -196,38 +253,43 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setCashClosings(p => [closing, ...p])
     audit('Cierre de caja', `Total: $${payload.grandTotal.toLocaleString()}`)
   }, [setCashClosings, audit])
+
   const resetDashboard = useCallback(() => {
     const freshRooms = initRooms.map(r => ({...r, status: 'available' as Room['status']}))
     setRooms(freshRooms)
     setReservations([])
     setExtras([])
+    setHotelConfig(hotelDefaults)
     setPayments([])
     setCashClosings([])
     setAuditRaw([])
     saveLS('audit', [])
     audit('Reset', 'Dashboard limpiado — todos los datos borrados')
-  }, [setRooms, setReservations, setExtras, setPayments, setCashClosings, audit])
+  }, [setRooms, setReservations, setExtras, setPayments, setCashClosings, setHotelConfig, audit])
+
   const setHotelLogo = useCallback((logo: string | null) => {
     setHotelLogoRaw(logo)
     saveLS('hotelLogo', logo)
   }, [])
+
+  const setHotelConfig = useCallback((config: HotelConfig) => {
+    setHotelConfigRaw(config)
+    saveLS('hotelConfig', config)
+  }, [])
+
   return (
     <Ctx.Provider value={{
-      rooms, reservations, extras, auditLog,
-      cashClosings, payments, guestProfiles,
-      selectedGuest, selectedRoomNumber,
-      setSelectedGuest, setSelectedRoomNumber,
-      addReservation, updateRoomStatus, updateRoom, setRooms, updateResStatus,
-      checkIn, checkOut, cancelReservation,
-      addExtra, removeExtra, getExtrasForReservation,
-      updateGuestProfile, closeCaja, recordPayment,
-      resetDashboard,
-      hotelLogo, setHotelLogo,
+      rooms, reservations, extras, auditLog, cashClosings, payments, guestProfiles, hotelLogo, setHotelLogo,
+      hotelConfig, setHotelConfig,
+      selectedGuest, selectedRoomNumber, setSelectedGuest, setSelectedRoomNumber,
+      addReservation, updateRoomStatus, updateRoom, setRooms, updateResStatus, checkIn, checkOut, cancelReservation,
+      addExtra, removeExtra, getExtrasForReservation, updateGuestProfile, closeCaja, recordPayment, resetDashboard,
     }}>
       {children}
     </Ctx.Provider>
   )
 }
+
 export function useStore() {
   const ctx = useContext(Ctx)
   if (!ctx) throw new Error('useStore fuera del StoreProvider')
