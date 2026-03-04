@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'UI: update Sidebar icons and labels based on reference images
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, BedDouble, Calendar, Users, Bot, Settings, Hotel, DollarSign } from 'lucide-react'
