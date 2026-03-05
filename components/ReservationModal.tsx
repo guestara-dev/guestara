@@ -61,7 +61,7 @@ export default function ReservationModal({ onClose, preRoomNumber }: Props) {
   }, [preRoomNumber, preType])
 
   const available = useMemo(() =>
-    rooms.filter(r => r.type===type && r.status==='available' && r.enabled !== false), [rooms, type])
+    rooms.filter(r => r.type===type && r.status==='available' && ), [rooms, type])
 
   const dur = calcDuration(checkIn, checkInTime, checkOut, checkOutTime)
   const amount = Math.max(1, dur.nights) * prices[type]
@@ -177,7 +177,7 @@ export default function ReservationModal({ onClose, preRoomNumber }: Props) {
               <label className="text-sm text-gray-400 block mb-2">Tipo</label>
               <div className="grid grid-cols-2 gap-2">
                 {(['single','double'] as RoomType[]).map(t => {
-                  const av = rooms.filter(r => r.type===t && r.status==='available' && r.enabled !== false).length
+                  const av = rooms.filter(r => r.type===t && r.status==='available' && ).length
                   const locked = !!preRoomNumber
                   return (
                     <button key={t} type="button"

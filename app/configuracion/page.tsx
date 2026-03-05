@@ -13,7 +13,6 @@ export default function ConfiguracionPage() {
   const [role, setRole] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // State for room editing
   const [editingRoom, setEditingRoom] = useState<string | null>(null)
   const [editValues, setEditValues] = useState({ name: '', type: 'single' as 'single' | 'double', price: 0, enabled: true })
 
@@ -61,189 +60,166 @@ export default function ConfiguracionPage() {
   }
 
   return (
-    <div className="p-5 space-y-6 max-w-4xl pb-20">
-      <div>
-        <h1 className="text-xl font-bold">Configuración</h1>
-        <p className="text-xs text-gray-400 mt-0.5">Ajustes del sistema Guestara</p>
-      </div>
+    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-64px)] bg-black overflow-hidden">
+      {/* Side Menu */}
+      <div className="w-full lg:w-80 border-r border-gray-800 p-6 space-y-8 bg-gray-900/20 overflow-y-auto">
+        <div>
+          <h1 className="text-xl font-bold text-white">Configuración</h1>
+          <p className="text-xs text-gray-500 mt-1">Gestión general del sistema</p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          {/* Logo del hotel */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20">
-                <Settings className="w-4 h-4 text-violet-400"/>
-              </div>
-              <div>
-                <h2 className="font-semibold text-sm">Logo del hotel</h2>
-                <p className="text-xs text-gray-400">Imagen de marca</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
+        {/* Logo Section */}
+        <div className="space-y-4">
+          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Identidad del Hotel</label>
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-center shadow-lg">
+            <div className="relative inline-block mb-4">
               {hotelLogo ? (
-                <img src={hotelLogo} alt="Logo" className="h-16 w-16 object-contain rounded-xl border border-gray-700 bg-gray-800 p-1" />
+                <img src={hotelLogo} alt="Logo" className="h-24 w-24 object-contain rounded-2xl border border-gray-700 bg-gray-800 p-2 shadow-inner" />
               ) : (
-                <div className="h-16 w-16 rounded-xl border border-dashed border-gray-600 bg-gray-800 flex items-center justify-center">
-                  <span className="text-xs text-gray-500">Sin logo</span>
+                <div className="h-24 w-24 rounded-2xl border-2 border-dashed border-gray-700 bg-gray-800/50 flex flex-col items-center justify-center gap-2">
+                  <Settings className="w-6 h-6 text-gray-600" />
+                  <span className="text-[10px] text-gray-500 font-medium">Sin logo</span>
                 </div>
               )}
-              <div className="flex flex-col gap-2">
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                <button onClick={() => fileInputRef.current?.click()} className="bg-violet-600 hover:bg-violet-500 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-all">
-                  Subir logo
+            </div>
+            <div className="flex flex-col gap-2">
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+              <button onClick={() => fileInputRef.current?.click()} className="bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all w-full shadow-lg shadow-violet-900/20">
+                Cambiar Logo
+              </button>
+              {hotelLogo && (
+                <button onClick={() => setHotelLogo(null)} className="text-red-400 text-[10px] font-medium hover:text-red-300 transition-colors py-1">
+                  Eliminar imagen
                 </button>
-                {hotelLogo && (
-                  <button onClick={() => setHotelLogo(null)} className="text-red-400 text-xs hover:underline text-left">
-                    Eliminar logo
-                  </button>
-                )}
-              </div>
+              )}
             </div>
-          </div>
-
-          {/* Info del hotel / Setup */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                <Settings className="w-4 h-4 text-blue-400"/>
-              </div>
-              <div>
-                <h2 className="font-semibold text-sm">Asistente de configuración</h2>
-                <p className="text-xs text-gray-400">Configuración inicial del hotel</p>
-              </div>
-            </div>
-            {role === 'admin' ? (
-              <button onClick={() => router.push('/setup')} className="w-full bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-xl text-xs font-medium border border-gray-700 transition-colors">
-                Abrir Setup Wizard
-              </button>
-            ) : (
-              <div className="flex items-center gap-2 bg-amber-950/20 border border-amber-900/30 rounded-lg px-3 py-2">
-                <ShieldAlert className="w-3.5 h-3.5 text-amber-500 shrink-0"/>
-                <p className="text-[10px] text-amber-200/70">Solo admin puede reconfigurar el hotel.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Danger zone */}
-          <div className="bg-gray-900 border border-red-900/30 rounded-xl p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-500/10 rounded-lg border border-red-500/20">
-                <Database className="w-4 h-4 text-red-400"/>
-              </div>
-              <div>
-                <h2 className="font-semibold text-sm text-red-300">Zona de peligro</h2>
-                <p className="text-xs text-gray-400">Acciones críticas</p>
-              </div>
-            </div>
-            {done ? (
-              <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                <CheckCircle className="w-3.5 h-3.5"/> Base limpiada exitosamente
-              </div>
-            ) : (
-              <button onClick={() => setShowConfirm(true)} className="w-full flex items-center justify-center gap-2 bg-red-600/10 hover:bg-red-600/20 border border-red-600/30 text-red-400 py-2 rounded-xl text-xs font-semibold transition-all">
-                <Trash2 className="w-3.5 h-3.5"/> Limpiar base completa
-              </button>
-            )}
           </div>
         </div>
 
-        {/* Room Management */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl flex flex-col overflow-hidden">
-          <div className="p-5 border-b border-gray-800 bg-gray-900/50">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="font-semibold text-sm">Gestión de Habitaciones</h2>
-              <span className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{rooms.length} Total</span>
-            </div>
-            <p className="text-xs text-gray-400">Habilitar/Deshabilitar y editar detalles</p>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto max-h-[600px] p-2 space-y-1 custom-scrollbar">
-            {rooms.sort((a,b) => a.number.localeCompare(b.number)).map(room => (
-              <div key={room.number} className={`group rounded-lg p-2 transition-all ${editingRoom === room.number ? 'bg-violet-600/10 border border-violet-500/30' : 'hover:bg-gray-800/50 border border-transparent'}`}>
-                {editingRoom === room.number ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-violet-400">Editando {room.number}</span>
-                      <div className="flex gap-1">
-                        <button onClick={() => setEditingRoom(null)} className="p-1 hover:bg-gray-700 rounded text-gray-400"><X className="w-3.5 h-3.5"/></button>
-                        <button onClick={() => handleSaveRoom(room.number)} className="p-1 bg-violet-600 text-white rounded hover:bg-violet-500"><Save className="w-3.5 h-3.5"/></button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="col-span-2">
-                        <label className="text-[10px] text-gray-500 uppercase font-bold ml-1">Nombre / Alias</label>
-                        <input 
-                          type="text" 
-                          value={editValues.name}
-                          onChange={e => setEditValues({...editValues, name: e.target.value})}
-                          className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500"
-                          placeholder="Ej: Suite Presidencial"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-500 uppercase font-bold ml-1">Tipo</label>
-                        <select 
-                          value={editValues.type}
-                          onChange={e => setEditValues({...editValues, type: e.target.value as any})}
-                          className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none"
-                        >
-                          <option value="single">Single</option>
-                          <option value="double">Double</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-500 uppercase font-bold ml-1">Precio x Noche</label>
-                        <input 
-                          type="number" 
-                          value={editValues.price}
-                          onChange={e => setEditValues({...editValues, price: Number(e.target.value)})}
-                          className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setEditValues({...editValues, enabled: !editValues.enabled})}
-                      className={`w-full py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${editValues.enabled ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}
-                    >
-                      {editValues.enabled ? 'Habitación Habilitada' : 'Habitación Deshabilitada'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold ${room.enabled ? 'bg-gray-800 text-white' : 'bg-red-950/40 text-red-500/50 grayscale'}`}>
-                        {room.number}
-                      </div>
-                      <div>
-                        <p className={`text-xs font-medium ${room.enabled ? 'text-gray-200' : 'text-gray-500 line-through'}`}>
-                          {room.name || `Habitación ${room.number}`}
-                        </p>
-                        <p className="text-[10px] text-gray-500">
-                          {room.type === 'single' ? 'Simple' : 'Doble'} • ${room.price}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <button 
-                        onClick={() => updateRoom(room.number, { enabled: !room.enabled })}
-                        className={`p-1.5 rounded hover:bg-gray-700 ${room.enabled ? 'text-gray-400' : 'text-amber-500'}`}
-                        title={room.enabled ? "Deshabilitar" : "Habilitar"}
-                      >
-                        {room.enabled ? <EyeOff className="w-3.5 h-3.5"/> : <Eye className="w-3.5 h-3.5"/>}
-                      </button>
-                      <button 
-                        onClick={() => handleStartEdit(room)}
-                        className="p-1.5 rounded hover:bg-gray-700 text-gray-400"
-                        title="Editar detalles"
-                      >
-                        <Edit2 className="w-3.5 h-3.5"/>
-                      </button>
-                    </div>
-                  </div>
-                )}
+        {/* System Section */}
+        <div className="space-y-4 pt-4 border-t border-gray-800">
+          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Herramientas</label>
+          <div className="space-y-2">
+            <button onClick={() => role === 'admin' ? router.push('/setup') : null} 
+              disabled={role !== 'admin'}
+              className="w-full flex items-center justify-between bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-700 px-4 py-3 rounded-xl transition-all group shadow-sm">
+              <div className="flex items-center gap-3">
+                <Settings className="w-4 h-4 text-violet-400" />
+                <span className="text-xs font-medium text-gray-200">Asistente Setup</span>
               </div>
-            ))}
+              {!role || role === 'admin' ? null : <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />}
+            </button>
+
+            <button onClick={() => setShowConfirm(true)}
+              className="w-full flex items-center gap-3 bg-red-950/10 hover:bg-red-950/20 border border-red-900/30 px-4 py-3 rounded-xl transition-all group">
+              <Database className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-medium text-red-400">Reiniciar Base</span>
+            </button>
+            {done && <p className="text-[10px] text-emerald-400 text-center animate-bounce font-medium mt-2">¡Base de datos limpiada!</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 flex flex-col bg-black">
+        <div className="p-6 lg:p-8 border-b border-gray-800 bg-gray-900/10">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-lg font-bold text-white">Gestión de Habitaciones</h2>
+            <p className="text-xs text-gray-400 mt-1">Configura el inventario de 30 habitaciones del hotel</p>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar">
+          <div className="max-w-5xl mx-auto">
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-800/30 border-b border-gray-800">
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Número</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Identificador / Alias</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tipo</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Precio Base</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest text-right">Estado y Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {rooms.sort((a,b) => Number(a.number) - Number(b.number)).map(room => (
+                      <tr key={room.number} className={`transition-colors ${editingRoom === room.number ? 'bg-violet-600/10' : room.enabled ? 'hover:bg-gray-800/40' : 'bg-red-950/5'}`}>
+                        {editingRoom === room.number ? (
+                          <td colSpan={5} className="px-6 py-6 bg-gray-800/50">
+                            <div className="grid grid-cols-4 gap-6 items-end">
+                              <div className="col-span-1">
+                                <label className="block text-[10px] text-gray-500 mb-1.5 font-bold uppercase tracking-tight">Nombre Habitación</label>
+                                <input value={editValues.name} onChange={e => setEditValues({...editValues, name: e.target.value})}
+                                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:border-violet-500 outline-none transition-all" />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-gray-500 mb-1.5 font-bold uppercase tracking-tight">Tipo de Cama</label>
+                                <select value={editValues.type} onChange={e => setEditValues({...editValues, type: e.target.value as any})}
+                                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-violet-500">
+                                  <option value="single">Individual (Single)</option>
+                                  <option value="double">Matrimonial (Double)</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-gray-500 mb-1.5 font-bold uppercase tracking-tight">Tarifa Diaria</label>
+                                <div className="relative">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">$</span>
+                                  <input type="number" value={editValues.price} onChange={e => setEditValues({...editValues, price: Number(e.target.value)})}
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-6 pr-3 py-2 text-xs text-white outline-none focus:border-violet-500" />
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => handleSaveRoom(room.number)} className="flex-1 bg-violet-600 hover:bg-violet-500 text-white py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-900/30">
+                                  <Save className="w-3.5 h-3.5" /> Aplicar
+                                </button>
+                                <button onClick={() => setEditingRoom(null)} className="p-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-xl border border-gray-600 transition-all">
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        ) : (
+                          <>
+                            <td className="px-6 py-4">
+                              <span className={`text-sm font-bold ${room.enabled ? 'text-white' : 'text-gray-600'}`}>{room.number}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`text-sm font-medium ${room.enabled ? 'text-gray-300' : 'text-gray-600 line-through'}`}>
+                                {room.name || `Habitación ${room.number}`}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium border ${room.enabled ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-transparent border-gray-800 text-gray-700'}`}>
+                                {room.type === 'single' ? 'Single' : 'Double'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`text-sm font-semibold ${room.enabled ? 'text-emerald-400' : 'text-gray-700'}`}>${room.price.toLocaleString()}</span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button onClick={() => updateRoom(room.number, { enabled: !room.enabled })}
+                                  className={`p-2 rounded-xl transition-all border ${room.enabled ? 'text-gray-400 border-gray-800 hover:bg-gray-800 hover:text-white' : 'text-amber-500 border-amber-900/30 bg-amber-500/10 hover:bg-amber-500/20'}`}
+                                  title={room.enabled ? "Ocultar en Dashboard" : "Mostrar en Dashboard"}>
+                                  {room.enabled ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                                <button onClick={() => handleStartEdit(room)}
+                                  className="p-2 rounded-xl text-gray-400 border border-gray-800 hover:bg-gray-800 hover:text-white transition-all"
+                                  title="Editar parámetros">
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -251,10 +227,10 @@ export default function ConfiguracionPage() {
       {showConfirm && (
         <AlertDialog
           open
-          title="¿Limpiar toda la base?"
-          description="Se eliminarán TODAS las reservas, pagos, extras y cierres de caja. Las 30 habitaciones quedarán disponibles. Esta acción es irreversible."
+          title="¿Confirmar Reinicio del Sistema?"
+          description="Se borrarán permanentemente todos los datos operativos (reservas, pagos, historial). La configuración de las 30 habitaciones se mantendrá pero todas quedarán como 'Disponibles'. Esta acción no se puede deshacer."
           variant="danger"
-          confirmLabel="Sí, limpiar todo"
+          confirmLabel="Sí, borrar todo"
           cancelLabel="Cancelar"
           onConfirm={() => { setShowConfirm(false); handleReset() }}
           onCancel={() => setShowConfirm(false)}
