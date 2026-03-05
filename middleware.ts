@@ -1,22 +1,40 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+// BUG-01 FIX: /login with active session → redirect to dashboard (SSR)
+// BUG-02 FIX: Strict route separation - authenticated vs public
 export function middleware(request: NextRequest) {
   const auth = request.cookies.get('g_auth')?.value
   const { pathname } = request.nextUrl
 
-  // Always allow login page and public assets
+  // --- PUBLIC ROUTES ---
+  // BUG-01: If user already has a valid session and tries to access /login,
+  // redirect immediately to dashboard without rendering the login page.
   if (pathname.startsWith('/login')) {
     if (auth) {
       try {
         JSON.parse(atob(decodeURIComponent(auth)))
-        return NextResponse.redirect(new URL('/', request.url))
-      } catch {}
+        // Valid session → redirect away from login
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      } catch {
+        // Malformed cookie → allow login page to render
+      }
     }
+    // No session → allow login
     return NextResponse.next()
   }
 
-  // Block all other routes if not authenticated
+  // --- ROOT REDIRECT ---
+  // Redirect / to /dashboard for cleaner routing
+  if (pathname === '/') {
+    if (!auth) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // --- PROTECTED ROUTES ---
+  // BUG-02: Block ALL app routes if not authenticated
   if (!auth) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('from', pathname)
@@ -31,7 +49,7 @@ export function middleware(request: NextRequest) {
     const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route))
 
     if (isAdminRoute && user.role !== 'admin') {
-      return NextResponse.redirect(new URL('/', request.url))
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
     return NextResponse.next()
@@ -44,6 +62,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Protect all routes except login, api, static assets
-  matcher: ['/((?!login|api|_next/static|_next/image|favicon.ico).*)'],
+  // BUG-02: Protect all app routes - /dashboard is now the main authenticated route
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 }
