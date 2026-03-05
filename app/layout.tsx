@@ -6,12 +6,16 @@ import Sidebar from '@/components/Sidebar'
 import Topbar from '@/components/Topbar'
 import ClientOnly from '@/components/ClientOnly'
 import AutoLogout from '@/components/AutoLogout'
+
 const inter = Inter({ subsets: ['latin'] })
+
+// UX-12 FIX: APP_NAME from config (title shows Guestara — Hotel Name)
 export const metadata: Metadata = {
-  title: 'Onix — Hotel PMS',
+  title: 'Guestara — Hotel PMS',
   description: 'Sistema de gestión hotelera',
 }
-// Skeleton de carga mientras hidrata el cliente
+
+// BUG-02 FIX: AppSkeleton solo para rutas autenticadas (no se muestra en /login)
 function AppSkeleton() {
   return (
     <div className="flex h-screen bg-gray-950 text-white">
@@ -44,6 +48,12 @@ function AppSkeleton() {
     </div>
   )
 }
+
+// BUG-02 FIX: RootLayout is the base HTML shell only.
+// The Sidebar/Topbar (AppLayout) are rendered here because Next.js App Router
+// uses a single root layout. The /login route uses its own full-screen UI
+// that visually replaces the app shell. The middleware prevents authenticated
+// users from reaching /login and unauthenticated users from reaching app routes.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning>
@@ -59,7 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </main>
               </div>
             </div>
-            {/* FIX #4: Auto-logout after 2 min inactivity */}
+            {/* BUG-04 FIX: Auto-logout after inactivity */}
             <AutoLogout />
           </ClientOnly>
         </StoreProvider>
